@@ -1,59 +1,126 @@
-import feedparser
-import smtplib
 import os
+import smtplib
+import feedparser
+
 from email.mime.text import MIMEText
 from datetime import datetime
 
+# ==========================
+# CONFIGURAÇÃO DOS FEEDS
+# ==========================
+
 FEEDS = {
-"InfoMoney": "https://www.infomoney.com.br/feed/",
-"Money Times": "https://www.moneytimes.com.br/feed/"
+    "InfoMoney": "https://www.infomoney.com.br/feed/",
+    "Money Times": "https://www.moneytimes.com.br/feed/"
 }
 
-categorias = {
-"📈 Bolsa": ["ibovespa", "ações", "bolsa", "b3"],
-"💵 Dólar": ["dólar", "câmbio", "usd"],
-"🏦 Juros": ["selic", "copom", "juros"],
-"🌎 Internacional": ["eua", "fed", "china", "europa"],
-"₿ Cripto": ["bitcoin", "ethereum", "cripto"],
+# ==========================
+# CATEGORIAS
+# ==========================
+
+CATEGORIAS = {
+    "📈 Bolsa": [
+        "ibovespa",
+        "ações",
+        "acao",
+        "b3",
+        "petrobras",
+        "vale"
+    ],
+
+    "💵 Dólar": [
+        "dólar",
+        "dolar",
+        "câmbio",
+        "cambio",
+        "usd"
+    ],
+
+    "🏦 Juros": [
+        "selic",
+        "copom",
+        "juros"
+    ],
+
+    "🌎 Internacional": [
+        "eua",
+        "fed",
+        "china",
+        "europa"
+    ],
+
+    "₿ Cripto": [
+        "bitcoin",
+        "ethereum",
+        "cripto"
+    ]
 }
 
-noticias_unicas = []
-titulos_vistos = set()
+# ==========================
+# COLETA DAS NOTÍCIAS
+# ==========================
+
+noticias = []
+titulos = set()
 
 for fonte, url in FEEDS.items():
 
-```
-feed = feedparser.parse(url)
+    feed = feedparser.parse(url)
 
-for item in feed.entries[:15]:
+    for item in feed.entries[:15]:
 
-    titulo = item.title.strip()
+        titulo = item.title.strip()
 
-    titulo_normalizado = titulo.lower()
+        chave = titulo.lower()
 
-    if titulo_normalizado in titulos_vistos:
-        continue
+        if chave in titulos:
+            continue
 
-    titulos_vistos.add(titulo_normalizado)
+        titulos.add(chave)
 
-    categoria = "🏢 Empresas"
+        categoria = "🏢 Empresas"
 
-    for cat, palavras in categorias.items():
-        if any(p in titulo_normalizado for p in palavras):
-            categoria = cat
-            break
+        for nome_categoria, palavras in CATEGORIAS.items():
 
-    noticias_unicas.append({
-        "fonte": fonte,
-        "titulo": titulo,
-        "link": item.link,
-        "categoria": categoria
-    })
-```
+            encontrou = False
+
+            for palavra in palavras:
+
+                if palavra in chave:
+                    categoria = nome_categoria
+                    encontrou = True
+                    break
+
+            if encontrou:
+                break
+
+        noticias.append({
+            "titulo": titulo,
+            "fonte": fonte,
+            "categoria": categoria,
+            "link": item.link
+        })
+
+# ==========================
+# ORGANIZAÇÃO
+# ==========================
+
+ordem = [
+    "📈 Bolsa",
+    "💵 Dólar",
+    "🏦 Juros",
+    "🌎 Internacional",
+    "₿ Cripto",
+    "🏢 Empresas"
+]
+
+# ==========================
+# HTML
+# ==========================
 
 html = f"""
-
 <html>
+
 <body style="font-family:Arial">
 
 <h1>📊 Resumo Diário do Mercado</h1>
@@ -64,53 +131,77 @@ Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}
 
 """
 
-for categoria in [
-"📈 Bolsa",
-"💵 Dólar",
-"🏦 Juros",
-"🌎 Internacional",
-"₿ Cripto",
-"🏢 Empresas"
-]:
+for categoria in ordem:
 
-```
-html += f"<h2>{categoria}</h2>"
+    html += f"<h2>{categoria}</h2>"
 
-categoria_noticias = [
-    n for n in noticias_unicas
-    if n["categoria"] == categoria
-]
+    lista = []
 
-if not categoria_noticias:
-    html += "<p>Nenhuma notícia encontrada.</p>"
-    continue
+    for noticia in noticias:
 
-for noticia in categoria_noticias:
+        if noticia["categoria"] == categoria:
+            lista.append(noticia)
 
-    html += f"""
-    <div style='margin-bottom:15px'>
-        <b>{noticia["titulo"]}</b><br>
-        Fonte: {noticia["fonte"]}<br>
-        <a href='{noticia["link"]}'>
-            Ler notícia
+    if len(lista) == 0:
+
+        html += "<p>Nenhuma notícia encontrada.</p>"
+
+        continue
+
+    for noticia in lista:
+
+        html += f"""
+
+        <div style="margin-bottom:18px">
+
+        <b>{noticia['titulo']}</b><br>
+
+        Fonte: {noticia['fonte']}<br>
+
+        <a href="{noticia['link']}">
+        Ler notícia
         </a>
-    </div>
-    """
-```
 
-html += "</body></html>"
+        </div>
+
+        """
+
+html += """
+
+<hr>
+
+<p style="font-size:12px;color:gray">
+
+Financial News Agent
+
+</p>
+
+</body>
+
+</html>
+
+"""
+
+# ==========================
+# ENVIO DO EMAIL
+# ==========================
 
 EMAIL = os.environ["EMAIL"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
 DESTINO = os.environ["DESTINO"]
 
 msg = MIMEText(html, "html")
+
 msg["Subject"] = "📊 Resumo Diário Mercado Financeiro"
+
 msg["From"] = EMAIL
+
 msg["To"] = DESTINO
 
 with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-server.login(EMAIL, EMAIL_PASSWORD)
-server.send_message(msg)
+
+    server.login(EMAIL, EMAIL_PASSWORD)
+
+    server.send_message(msg)
 
 print("Email enviado com sucesso!")
