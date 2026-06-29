@@ -1,9 +1,11 @@
 import os
 import requests
 
-API_KEY = os.environ["GROQ_API_KEY"]
-
 URL = "https://api.groq.com/openai/v1/chat/completions"
+
+MODEL = "llama-3.3-70b-versatile"
+
+API_KEY = os.environ["GROQ_API_KEY"]
 
 
 def gerar_resumo(texto):
@@ -13,28 +15,16 @@ def gerar_resumo(texto):
         "Content-Type": "application/json"
     }
 
-    prompt = f"""
-Você é um analista financeiro.
-
-Leia as notícias abaixo.
-
-Escreva:
-
-1. Um resumo executivo.
-2. Os cinco principais acontecimentos.
-3. O sentimento do mercado (Positivo, Neutro ou Negativo).
-
-Notícias:
-
-{texto}
-"""
-
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": MODEL,
         "messages": [
             {
+                "role": "system",
+                "content": "Você é um analista financeiro."
+            },
+            {
                 "role": "user",
-                "content": prompt
+                "content": texto
             }
         ],
         "temperature": 0.2
@@ -43,7 +33,8 @@ Notícias:
     resposta = requests.post(
         URL,
         headers=headers,
-        json=payload
+        json=payload,
+        timeout=60
     )
 
     resposta.raise_for_status()
