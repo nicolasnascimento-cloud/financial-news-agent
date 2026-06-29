@@ -24,7 +24,8 @@ jobs:
 
       - name: Executar agente
         env:
-          EMAIL: ${{ secrets.EMAIL }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          DESTINO: ${{ secrets.DESTINO }}
+  EMAIL: ${{ secrets.EMAIL }}
+  EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+  DESTINO: ${{ secrets.DESTINO }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python main.py
