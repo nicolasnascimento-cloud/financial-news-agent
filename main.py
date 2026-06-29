@@ -5,6 +5,8 @@ import feedparser
 from email.mime.text import MIMEText
 from datetime import datetime
 
+from summarizer import gerar_resumo
+
 # ==========================
 # CONFIGURAÇÃO DOS FEEDS
 # ==========================
@@ -102,6 +104,24 @@ for fonte, url in FEEDS.items():
         })
 
 # ==========================
+# TESTE DA IA
+# ==========================
+
+texto_teste = """
+Petrobras anunciou aumento da produção.
+
+O Ibovespa fechou em alta.
+
+O dólar caiu frente ao real.
+"""
+
+print("Consultando a Groq...")
+
+resumo_ia = gerar_resumo(texto_teste)
+
+print(resumo_ia)
+
+# ==========================
 # ORGANIZAÇÃO
 # ==========================
 
@@ -129,6 +149,16 @@ html = f"""
 Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}
 </p>
 
+<hr>
+
+<h2>🤖 Resumo gerado pela IA</h2>
+
+<pre style="white-space: pre-wrap; font-family: Arial;">
+{resumo_ia}
+</pre>
+
+<hr>
+
 """
 
 for categoria in ordem:
@@ -151,7 +181,6 @@ for categoria in ordem:
     for noticia in lista:
 
         html += f"""
-
         <div style="margin-bottom:18px">
 
         <b>{noticia['titulo']}</b><br>
@@ -163,7 +192,6 @@ for categoria in ordem:
         </a>
 
         </div>
-
         """
 
 html += """
@@ -171,9 +199,7 @@ html += """
 <hr>
 
 <p style="font-size:12px;color:gray">
-
-Financial News Agent
-
+Financial Intelligence Agent - V3
 </p>
 
 </body>
@@ -192,7 +218,7 @@ DESTINO = os.environ["DESTINO"]
 
 msg = MIMEText(html, "html")
 
-msg["Subject"] = "📊 Resumo Diário Mercado Financeiro"
+msg["Subject"] = "📊 Morning Brief (Teste Groq)"
 
 msg["From"] = EMAIL
 
